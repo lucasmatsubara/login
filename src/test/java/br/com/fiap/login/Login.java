@@ -1,8 +1,12 @@
 package br.com.fiap.login;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.*;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -23,10 +27,12 @@ public class Login {
     private static final By MENSAGEM_ERRO = By.cssSelector("[data-test='error']");
 
     private WebDriver driver;
+    private WebDriverWait wait;
 
     @BeforeEach
     void abrirNavegador() {
         driver = new ChromeDriver();
+        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
         // Dado: que esteja na página saucedemo.com (pré-condição comum a todos os cenários)
         driver.get(BASE_URL);
@@ -45,6 +51,11 @@ public class Login {
         driver.findElement(BOTAO_LOGIN).click();
     }
 
+    private String obterMensagemErro() {
+        wait.until(ExpectedConditions.visibilityOfElementLocated(MENSAGEM_ERRO));
+        return driver.findElement(MENSAGEM_ERRO).getText();
+    }
+
     @Test
     @DisplayName("CT1 - Login com sucesso (200)")
     void deveLogarComCredenciaisValidas() {
@@ -54,6 +65,7 @@ public class Login {
         realizarLogin(USUARIO_VALIDO, SENHA_VALIDA);
 
         // Então: deverá ser redirecionado para a página inventory.html
+        wait.until(ExpectedConditions.urlContains("inventory.html"));
         assertEquals(BASE_URL + "inventory.html", driver.getCurrentUrl());
         assertTrue(driver.findElement(ICONE_CARRINHO).isDisplayed());
     }
@@ -64,7 +76,7 @@ public class Login {
         realizarLogin(USUARIO_VALIDO, SENHA_INVALIDA);
 
         // Então: credenciais inválidas, permanece na tela de login
-        String mensagem = driver.findElement(MENSAGEM_ERRO).getText();
+        String mensagem = obterMensagemErro();
         assertTrue(mensagem.contains("do not match"),
                 "Esperava mensagem de credenciais inválidas, veio: " + mensagem);
         assertEquals(BASE_URL, driver.getCurrentUrl());
@@ -76,7 +88,7 @@ public class Login {
         realizarLogin(USUARIO_BLOQUEADO, SENHA_VALIDA);
 
         // Então: conta bloqueada, acesso negado mesmo com credenciais corretas
-        String mensagem = driver.findElement(MENSAGEM_ERRO).getText();
+        String mensagem = obterMensagemErro();
         assertTrue(mensagem.contains("locked out"),
                 "Esperava mensagem de usuário bloqueado, veio: " + mensagem);
         assertEquals(BASE_URL, driver.getCurrentUrl());
@@ -90,7 +102,7 @@ public class Login {
         driver.findElement(BOTAO_LOGIN).click();
 
         // Então: erro de campo obrigatório
-        String mensagem = driver.findElement(MENSAGEM_ERRO).getText();
+        String mensagem = obterMensagemErro();
         assertTrue(mensagem.contains("Password is required"),
                 "Esperava mensagem de senha obrigatória, veio: " + mensagem);
     }
@@ -103,7 +115,7 @@ public class Login {
         driver.findElement(BOTAO_LOGIN).click();
 
         // Então: erro de campo obrigatório
-        String mensagem = driver.findElement(MENSAGEM_ERRO).getText();
+        String mensagem = obterMensagemErro();
         assertTrue(mensagem.contains("Username is required"),
                 "Esperava mensagem de usuário obrigatório, veio: " + mensagem);
     }
